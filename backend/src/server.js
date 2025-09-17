@@ -23,7 +23,7 @@ app.post("/albums", async (req, res) => {
       .json({ error: "Title, artist, genre, and status are required fields." });
   }
 
-  if (rating !== undefined) {
+  if (rating !== undefined && rating !== null) {
     if (typeof rating !== "number" || rating < 1 || rating > 5) {
       return res
         .status(400)
@@ -33,7 +33,13 @@ app.post("/albums", async (req, res) => {
 
   try {
     const album = await prisma.album.create({
-      data: { title, artist, genre, status, rating },
+      data: { 
+        title, 
+        artist, 
+        genre, 
+        status, 
+        ...(rating !== null && rating !== undefined && { rating })
+      },
     });
     res.json(album);
   } catch (error) {
@@ -48,40 +54,44 @@ app.patch("/albums/:id", async (req, res) => {
   const { title, artist, genre, status, rating } = req.body;
 
   if (title !== undefined) {
-    if (title.trim() === "") {
+    if (typeof title !== 'string' || title.trim() === "") {
       return res.status(400).json({ error: "Title cannot be empty." });
     }
-    data.title = title;
+    data.title = title.trim();
   }
 
   if (artist !== undefined) {
-    if (artist.trim() === "") {
+    if (typeof artist !== 'string' || artist.trim() === "") {
       return res.status(400).json({ error: "Artist cannot be empty." });
     }
-    data.artist = artist;
+    data.artist = artist.trim();
   }
 
   if (genre !== undefined) {
-    if (genre.trim() === "") {
+    if (typeof genre !== 'string' || genre.trim() === "") {
       return res.status(400).json({ error: "Genre cannot be empty." });
     }
-    data.genre = genre;
+    data.genre = genre.trim();
   }
 
   if (status !== undefined) {
-    if (status.trim() === "") {
-      return res.status(400).json({ error: "Status cannot be empty." });
+    const validStatuses = ['TO_LISTEN', 'LISTENING', 'LISTENED'];
+    if (typeof status !== 'string' || !validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value." });
     }
     data.status = status;
   }
 
   if (rating !== undefined) {
-    if (typeof rating !== "number" || rating < 1 || rating > 5) {
+    if (rating === null) {
+      data.rating = null;
+    } else if (typeof rating !== "number" || rating < 1 || rating > 5) {
       return res
         .status(400)
-        .json({ error: "Rating must be a number between 1 and 5." });
+        .json({ error: "Rating must be a number between 1 and 5, or null to clear." });
+    } else {
+      data.rating = rating;
     }
-    data.rating = rating;
   }
 
   if (Object.keys(data).length === 0) {
