@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: music-app
+data:
+  DATABASE_URL: "postgresql://postgres:password@db:5432/mydb"
